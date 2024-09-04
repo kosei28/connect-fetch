@@ -17,7 +17,7 @@ interface FetchHandlerOptions<Env> extends ConnectRouterOptions {
   notFound?: (req: Request, env: Env) => Promise<Response>;
 }
 
-type FetchHandler<Env> = Env extends undefined
+type FetchHandler<Env> = [Env] extends [undefined]
   ? (req: Request) => Promise<Response>
   : (req: Request, env: Env) => Promise<Response>;
 
