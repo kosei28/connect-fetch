@@ -3,7 +3,7 @@ import { createConnectTransport } from "@connectrpc/connect-web";
 import { ElizaService } from "../gen/connectrpc/eliza/v1/eliza_connect";
 
 const transport = createConnectTransport({
-  baseUrl: "http://127.0.0.1:3000",
+  baseUrl: "http://localhost:3000",
 });
 const client = createPromiseClient(ElizaService, transport);
 
