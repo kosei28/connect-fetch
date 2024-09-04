@@ -8,51 +8,46 @@ import type { UniversalHandler } from "@connectrpc/connect/protocol";
 import {
   universalServerRequestFromFetch,
   universalServerResponseToFetch,
-  uResponseNotFound,
 } from "@connectrpc/connect/protocol";
 
-type UniversalHandlerPathsOptions = ConnectRouterOptions & {
+interface FetchHandlerOptions<Env> extends ConnectRouterOptions {
   routes: (router: ConnectRouter) => void;
   requestPathPrefix?: string;
-};
+  contextValues?: (req: Request, env: Env) => ContextValues;
+  notFound?: (req: Request, env: Env) => Promise<Response>;
+}
 
-type UniversalHandlerPathsMap = Map<string, UniversalHandler>;
+type FetchHandler<Env> = Env extends undefined
+  ? (req: Request) => Promise<Response>
+  : (req: Request, env: Env) => Promise<Response>;
 
-export function universalHandlerPaths(
-  options: UniversalHandlerPathsOptions
-): UniversalHandlerPathsMap {
+export function createFetchHandler<Env = undefined>(
+  options: FetchHandlerOptions<Env>
+) {
   const router = createConnectRouter(options);
   options.routes(router);
   const prefix = options.requestPathPrefix ?? "";
-  const paths: UniversalHandlerPathsMap = new Map();
+  const paths = new Map<string, UniversalHandler>();
   for (const uHandler of router.handlers) {
     paths.set(prefix + uHandler.requestPath, uHandler);
   }
-  return paths;
-}
 
-type ConnectFetchAdapterOptions = {
-  paths: UniversalHandlerPathsMap;
-  httpVersion?: string;
-  contextValues?: ContextValues;
-};
-
-type FetchHandlerFn = (req: Request) => Promise<Response>;
-
-export function connectFetchAdapter(
-  options: ConnectFetchAdapterOptions
-): FetchHandlerFn {
-  return async (req) => {
+  const fetch = (async (req: Request, env: Env) => {
     const url = new URL(req.url);
-    const uHandler = options.paths.get(url.pathname);
-    if (!uHandler) {
-      return universalServerResponseToFetch(uResponseNotFound);
+    const uHandler = paths.get(url.pathname);
+    if (uHandler === undefined) {
+      return (
+        (await options.notFound?.(req, env)) ??
+        new Response("Not found", { status: 404 })
+      );
     }
-    const uReq = universalServerRequestFromFetch(req, {
-      httpVersion: options.httpVersion,
-    });
-    uReq.contextValues = options.contextValues; // universalServerRequestFromFetch does not have contextValues option
+    const uReq = {
+      ...universalServerRequestFromFetch(req, {}),
+      contextValues: options.contextValues?.(req, env),
+    };
     const uRes = await uHandler(uReq);
     return universalServerResponseToFetch(uRes);
-  };
+  }) as FetchHandler<Env>;
+
+  return fetch;
 }

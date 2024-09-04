@@ -1,8 +1,6 @@
-import { connectFetchAdapter, universalHandlerPaths } from "./adapter";
-import routes from "./connect";
+import { createFetchHandler } from "./adapter";
+import { routes } from "./connect";
 
-const paths = universalHandlerPaths({ routes });
+const fetch = createFetchHandler({ routes });
 
-export default {
-  fetch: connectFetchAdapter({ paths }),
-};
+export default { fetch };
