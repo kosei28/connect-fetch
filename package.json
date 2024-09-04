@@ -5,6 +5,7 @@
     "@bufbuild/protoc-gen-es": "^1.0.0",
     "@connectrpc/connect": "^1.0.0",
     "@connectrpc/connect-web": "^v1.0.0",
-    "@connectrpc/protoc-gen-connect-es": "^1.0.0"
+    "@connectrpc/protoc-gen-connect-es": "^1.0.0",
+    "hono": "^4.5.11"
   }
 }
